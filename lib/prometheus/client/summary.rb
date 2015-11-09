@@ -29,7 +29,12 @@ module Prometheus
       # Records a given value.
       def add(labels, value)
         label_set = label_set_for(labels)
-        synchronize { @values[label_set].observe(value) }
+        synchronize do
+          @store.transaction do
+            @store[label_set] ||= default
+            @store[label_set].observe(value)
+          end
+        end
       end
 
       # Returns the value for the given label set
@@ -44,8 +49,11 @@ module Prometheus
       # Returns all label sets with their values
       def values
         synchronize do
-          @values.each_with_object({}) do |(labels, value), memo|
-            memo[labels] = Value.new(value)
+          @store.transaction do
+            return unless @store.roots
+            @store.roots.each_with_object({}) do |label, memo|
+              memo[label] = Value.new(@store[label])
+            end
           end
         end
       end

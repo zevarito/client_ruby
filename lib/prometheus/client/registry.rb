@@ -1,6 +1,7 @@
 # encoding: UTF-8
 
 require 'thread'
+require "pstore"
 
 require 'prometheus/client/counter'
 require 'prometheus/client/summary'

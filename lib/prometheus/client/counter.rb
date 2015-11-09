@@ -14,7 +14,12 @@ module Prometheus
         fail ArgumentError, 'increment must be a non-negative number' if by < 0
 
         label_set = label_set_for(labels)
-        synchronize { @values[label_set] += by }
+        synchronize do
+          @store.transaction do
+            @store[label_set] ||= default
+            @store[label_set] += by
+          end
+        end
       end
 
       private

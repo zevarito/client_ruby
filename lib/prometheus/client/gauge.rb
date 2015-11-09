@@ -13,7 +13,10 @@ module Prometheus
 
       # Sets the value for the given label set
       def set(labels, value)
-        @values[label_set_for(labels)] = value
+        label_set = label_set_for(labels)
+        @store.transaction do
+          @store[label_set] = value
+        end
       end
     end
   end

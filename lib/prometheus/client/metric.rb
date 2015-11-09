@@ -11,8 +11,9 @@ module Prometheus
 
       def initialize(name, docstring, base_labels = {})
         @mutex = Mutex.new
+        @tempfile = Tempfile.new(["prometheus-#{Process.pid}-#{name}",'.pstore'])
+        @store = PStore.new(@tempfile.path)
         @validator = LabelSetValidator.new
-        @values = Hash.new { |hash, key| hash[key] = default }
 
         validate_name(name)
         validate_docstring(docstring)
@@ -32,14 +33,17 @@ module Prometheus
       def get(labels = {})
         @validator.valid?(labels)
 
-        @values[labels]
+        @store[labels]
       end
 
       # Returns all label sets with their values
       def values
         synchronize do
-          @values.each_with_object({}) do |(labels, value), memo|
-            memo[labels] = value
+          @store.transaction do
+            return unless @store.roots
+            @store.roots.each_with_object({}) do |label, memo|
+              memo[label] = @store[label]
+            end
           end
         end
       end
