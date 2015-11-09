@@ -13,7 +13,8 @@ module Prometheus
 
         def initialize(app, options = {}, &label_builder)
           @app = app
-          @registry = options[:registry] || Client.registry
+          @store_class = options[:prefork] ? Stores::PStore : Stores::Hash
+          @registry = options[:registry] || Client.registry(@store_class)
           @label_builder = label_builder || DEFAULT_LABEL_BUILDER
 
           init_request_metrics
@@ -76,6 +77,7 @@ module Prometheus
           @durations.add(labels, duration)
         rescue
           # TODO: log unexpected exception during request recording
+          raise
           nil
         end
       end

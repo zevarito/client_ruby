@@ -1,7 +1,7 @@
 # encoding: UTF-8
 
 require 'thread'
-require "pstore"
+require 'pstore'
 
 require 'prometheus/client/counter'
 require 'prometheus/client/summary'
@@ -13,9 +13,10 @@ module Prometheus
     class Registry
       class AlreadyRegisteredError < StandardError; end
 
-      def initialize
+      def initialize(store_class)
         @metrics = {}
         @mutex = Mutex.new
+        @store_class = store_class
       end
 
       def register(metric)
@@ -33,15 +34,15 @@ module Prometheus
       end
 
       def counter(name, docstring, base_labels = {})
-        register(Counter.new(name, docstring, base_labels))
+        register(Counter.new(name, docstring, base_labels, @store_class))
       end
 
       def summary(name, docstring, base_labels = {})
-        register(Summary.new(name, docstring, base_labels))
+        register(Summary.new(name, docstring, base_labels, @store_class))
       end
 
       def gauge(name, docstring, base_labels = {})
-        register(Gauge.new(name, docstring, base_labels))
+        register(Gauge.new(name, docstring, base_labels, @store_class))
       end
 
       def exist?(name)

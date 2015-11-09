@@ -14,7 +14,8 @@ module Prometheus
       # Sets the value for the given label set
       def set(labels, value)
         label_set = label_set_for(labels)
-        @store.transaction do
+
+        @store.synchronize do
           @store[label_set] = value
         end
       end

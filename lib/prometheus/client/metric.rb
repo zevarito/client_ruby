@@ -2,6 +2,8 @@
 
 require 'thread'
 require 'prometheus/client/label_set_validator'
+require 'prometheus/client/stores/hash'
+require 'prometheus/client/stores/pstore'
 
 module Prometheus
   module Client
@@ -9,10 +11,7 @@ module Prometheus
     class Metric
       attr_reader :name, :docstring, :base_labels
 
-      def initialize(name, docstring, base_labels = {})
-        @mutex = Mutex.new
-        @tempfile = Tempfile.new(["prometheus-#{Process.pid}-#{name}",'.pstore'])
-        @store = PStore.new(@tempfile.path)
+      def initialize(name, docstring, base_labels = {}, store_class = Stores::Hash)
         @validator = LabelSetValidator.new
 
         validate_name(name)
@@ -22,6 +21,8 @@ module Prometheus
         @name = name
         @docstring = docstring
         @base_labels = base_labels
+
+        @store = store_class.new(self)
       end
 
       # Returns the metric type
@@ -33,26 +34,19 @@ module Prometheus
       def get(labels = {})
         @validator.valid?(labels)
 
-        @store[labels]
+        @store.get(labels)
       end
 
       # Returns all label sets with their values
       def values
-        synchronize do
-          @store.transaction do
-            return unless @store.roots
-            @store.roots.each_with_object({}) do |label, memo|
-              memo[label] = @store[label]
-            end
-          end
-        end
+        @store.values
       end
-
-      private
 
       def default
         nil
       end
+
+      private
 
       def validate_name(name)
         return true if name.is_a?(Symbol)
@@ -68,10 +62,6 @@ module Prometheus
 
       def label_set_for(labels)
         @validator.validate(labels)
-      end
-
-      def synchronize(&block)
-        @mutex.synchronize(&block)
       end
     end
   end

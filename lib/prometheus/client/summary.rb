@@ -29,36 +29,25 @@ module Prometheus
       # Records a given value.
       def add(labels, value)
         label_set = label_set_for(labels)
-        synchronize do
-          @store.transaction do
-            @store[label_set] ||= default
-            @store[label_set].observe(value)
-          end
-        end
+
+        @store[label_set].observe(value)
       end
 
       # Returns the value for the given label set
       def get(labels = {})
         @validator.valid?(labels)
 
-        synchronize do
-          Value.new(@values[labels])
+        @store.synchronize do
+          Value.new(@store[labels])
         end
       end
 
       # Returns all label sets with their values
       def values
-        synchronize do
-          @store.transaction do
-            return unless @store.roots
-            @store.roots.each_with_object({}) do |label, memo|
-              memo[label] = Value.new(@store[label])
-            end
-          end
+        @store.values.each_with_object({}) do |label, memo|
+          memo[label] = Value.new(@store[label])
         end
       end
-
-      private
 
       def default
         Quantile::Estimator.new

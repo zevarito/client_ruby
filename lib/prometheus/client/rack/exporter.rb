@@ -17,7 +17,8 @@ module Prometheus
 
         def initialize(app, options = {})
           @app = app
-          @registry = options[:registry] || Client.registry
+          @store_class = options[:prefork] ? Stores::PStore : Stores::Hash
+          @registry = options[:registry] || Client.registry(@store_class)
           @path = options[:path] || '/metrics'
           @acceptable = build_dictionary(FORMATS, FALLBACK)
         end
