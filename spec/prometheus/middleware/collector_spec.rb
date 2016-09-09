@@ -1,9 +1,9 @@
 # encoding: UTF-8
 
 require 'rack/test'
-require 'prometheus/client/rack/collector'
+require 'prometheus/middleware/collector'
 
-describe Prometheus::Client::Rack::Collector do
+describe Prometheus::Middleware::Collector do
   include Rack::Test::Methods
 
   let(:registry) do
@@ -26,7 +26,7 @@ describe Prometheus::Client::Rack::Collector do
   end
 
   it 'handles errors in the registry gracefully' do
-    counter = registry.get(:http_requests_total)
+    counter = registry.get(:http_server_requests_total)
     expect(counter).to receive(:increment).and_raise(NoMethodError)
 
     get '/foo'
@@ -36,15 +36,15 @@ describe Prometheus::Client::Rack::Collector do
 
   it 'traces request information' do
     expect(Time).to receive(:now).twice.and_return(0.0, 0.2)
-    labels = { method: 'get', host: 'example.org', path: '/foo', code: '200' }
+    labels = { method: 'get', path: '/foo', code: '200' }
 
     get '/foo'
 
     {
-      http_requests_total: 1,
-      http_request_duration_seconds: { 0.5 => 0.2, 0.9 => 0.2, 0.99 => 0.2 },
-    }.each do |metric, result|
-      expect(registry.get(metric).get(labels)).to eql(result)
+      http_server_requests_total: eql(1),
+      http_server_request_latency_seconds: include(0.1 => 0, 0.25 => 1),
+    }.each do |metric, expectation|
+      expect(registry.get(metric).get(labels)).to expectation
     end
   end
 
@@ -66,7 +66,7 @@ describe Prometheus::Client::Rack::Collector do
 
       expect { get '/broken' }.to raise_error NoMethodError
 
-      expect(registry.get(:http_exceptions_total).get(labels)).to eql(1)
+      expect(registry.get(:http_server_exceptions_total).get(labels)).to eql(1)
     end
   end
 
@@ -82,7 +82,7 @@ describe Prometheus::Client::Rack::Collector do
 
       labels = { method: 'get', code: '200' }
 
-      expect(registry.get(:http_requests_total).get(labels)).to eql(1)
+      expect(registry.get(:http_server_requests_total).get(labels)).to eql(1)
     end
   end
 end
