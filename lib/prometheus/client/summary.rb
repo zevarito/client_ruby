@@ -8,6 +8,8 @@ module Prometheus
     # Summary is an accumulator for samples. It captures Numeric data and
     # provides an efficient quantile calculation mechanism.
     class Summary < Metric
+      extend Gem::Deprecate
+
       # Value represents the state of a Summary at a given point.
       class Value < Hash
         attr_accessor :sum, :total
@@ -27,11 +29,13 @@ module Prometheus
       end
 
       # Records a given value.
-      def add(labels, value)
+      def observe(labels, value)
         label_set = label_set_for(labels)
 
         @store[label_set].observe(value)
       end
+      alias add observe
+      deprecate :add, :observe, 2016, 10
 
       # Returns the value for the given label set
       def get(labels = {})

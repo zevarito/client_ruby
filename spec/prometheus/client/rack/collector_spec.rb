@@ -35,15 +35,14 @@ describe Prometheus::Client::Rack::Collector do
   end
 
   it 'traces request information' do
-    expect(Time).to receive(:now).twice.and_return(0.0, 0.000002)
+    expect(Time).to receive(:now).twice.and_return(0.0, 0.2)
     labels = { method: 'get', host: 'example.org', path: '/foo', code: '200' }
 
     get '/foo'
 
     {
       http_requests_total: 1,
-      http_request_duration_total_microseconds: 2,
-      http_request_duration_microseconds: { 0.5 => 2, 0.9 => 2, 0.99 => 2 },
+      http_request_duration_seconds: { 0.5 => 0.2, 0.9 => 0.2, 0.99 => 0.2 },
     }.each do |metric, result|
       expect(registry.get(metric).get(labels)).to eql(result)
     end
@@ -52,11 +51,9 @@ describe Prometheus::Client::Rack::Collector do
   context 'when the app raises an exception' do
     let(:original_app) do
       lambda do |env|
-        if env['PATH_INFO'] == '/broken'
-          fail NoMethodError
-        else
-          [200, { 'Content-Type' => 'text/html' }, ['OK']]
-        end
+        raise NoMethodError if env['PATH_INFO'] == '/broken'
+
+        [200, { 'Content-Type' => 'text/html' }, ['OK']]
       end
     end
 

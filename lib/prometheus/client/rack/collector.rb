@@ -38,26 +38,25 @@ module Prometheus
         def init_request_metrics
           @requests = @registry.counter(
             :http_requests_total,
-            'A counter of the total number of HTTP requests made.')
-          @requests_duration = @registry.counter(
-            :http_request_duration_total_microseconds,
-            'The total amount of time spent answering HTTP requests ' \
-            '(microseconds).')
+            'A counter of the total number of HTTP requests made.',
+          )
           @durations = @registry.summary(
-            :http_request_duration_microseconds,
-            'A histogram of the response latency (microseconds).')
+            :http_request_duration_seconds,
+            'A histogram of the response latency.',
+          )
         end
 
         def init_exception_metrics
           @exceptions = @registry.counter(
             :http_exceptions_total,
-            'A counter of the total number of exceptions raised.')
+            'A counter of the total number of exceptions raised.',
+          )
         end
 
         def trace(env)
           start = Time.now
           yield.tap do |response|
-            duration = ((Time.now - start) * 1_000_000).to_i
+            duration = (Time.now - start).to_f
             record(labels(env, response), duration)
           end
         rescue => exception
@@ -73,8 +72,7 @@ module Prometheus
 
         def record(labels, duration)
           @requests.increment(labels)
-          @requests_duration.increment(labels, duration)
-          @durations.add(labels, duration)
+          @durations.observe(labels, duration)
         rescue
           # TODO: log unexpected exception during request recording
           raise

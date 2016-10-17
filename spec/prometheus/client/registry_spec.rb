@@ -37,7 +37,7 @@ describe Prometheus::Client::Registry do
         super.tap { sleep(0.01) }
       end
 
-      5.times.map do
+      Array.new(5) do
         Thread.new do
           result = begin
             registry.register(double(name: :test))
@@ -73,6 +73,14 @@ describe Prometheus::Client::Registry do
       metric = registry.summary(:test, 'test docstring')
 
       expect(metric).to be_a(Prometheus::Client::Summary)
+    end
+  end
+
+  describe '#histogram' do
+    it 'registers a new histogram metric container and returns the histogram' do
+      metric = registry.histogram(:test, 'test docstring')
+
+      expect(metric).to be_a(Prometheus::Client::Histogram)
     end
   end
 

@@ -6,6 +6,7 @@ require 'pstore'
 require 'prometheus/client/counter'
 require 'prometheus/client/summary'
 require 'prometheus/client/gauge'
+require 'prometheus/client/histogram'
 
 module Prometheus
   module Client
@@ -24,7 +25,7 @@ module Prometheus
 
         @mutex.synchronize do
           if exist?(name.to_sym)
-            fail AlreadyRegisteredError, "#{name} has already been registered"
+            raise AlreadyRegisteredError, "#{name} has already been registered"
           else
             @metrics[name.to_sym] = metric
           end
@@ -43,6 +44,11 @@ module Prometheus
 
       def gauge(name, docstring, base_labels = {})
         register(Gauge.new(name, docstring, base_labels, @store_class))
+      end
+
+      def histogram(name, docstring, base_labels = {},
+                    buckets = Histogram::DEFAULT_BUCKETS)
+        register(Histogram.new(name, docstring, base_labels, buckets))
       end
 
       def exist?(name)

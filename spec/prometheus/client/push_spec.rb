@@ -21,10 +21,12 @@ describe Prometheus::Client::Push do
       expect(push.gateway).to eql('http://pu.sh:1234')
     end
 
-    it 'raises an ArgumentError if a given gateway URL can not be parsed' do
-      expect do
-        Prometheus::Client::Push.new('test-job', nil, 'inva.lid:1233')
-      end.to raise_error ArgumentError
+    it 'raises an ArgumentError if the given gateway URL is invalid' do
+      ['inva.lid:1233', 'http://[invalid]'].each do |url|
+        expect do
+          Prometheus::Client::Push.new('test-job', nil, url)
+        end.to raise_error ArgumentError
+      end
     end
   end
 
@@ -76,6 +78,19 @@ describe Prometheus::Client::Push do
       expect(Net::HTTP).to receive(:new).with('pu.sh', 9091).and_return(http)
 
       described_class.new('foo', 'bar', 'http://pu.sh:9091').replace(registry)
+    end
+  end
+
+  describe '#delete' do
+    it 'deletes existing metrics from the configured Pushgateway' do
+      http = double(:http)
+      expect(http).to receive(:send_request).with(
+        'DELETE',
+        '/metrics/jobs/foo/instances/bar',
+      )
+      expect(Net::HTTP).to receive(:new).with('pu.sh', 9091).and_return(http)
+
+      described_class.new('foo', 'bar', 'http://pu.sh:9091').delete
     end
   end
 end
