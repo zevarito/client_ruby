@@ -11,7 +11,8 @@ module Prometheus
     class Metric
       attr_reader :name, :docstring, :base_labels
 
-      def initialize(name, docstring, base_labels = {}, store_class = Stores::Hash)
+      def initialize(name, docstring, base_labels = {},
+                     store_class = Stores::Hash)
         @validator = LabelSetValidator.new
 
         validate_name(name)

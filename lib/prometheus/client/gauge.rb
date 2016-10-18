@@ -15,9 +15,7 @@ module Prometheus
       def set(labels, value)
         label_set = label_set_for(labels)
 
-        @store.synchronize do
-          @store[label_set] = value
-        end
+        @store[label_set] = value
       end
     end
   end

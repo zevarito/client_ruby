@@ -61,7 +61,7 @@ module Prometheus
           end
         rescue => exception
           @exceptions.increment(exception: exception.class.name)
-          raise
+          raise exception
         end
 
         def labels(env, response)
@@ -75,7 +75,6 @@ module Prometheus
           @durations.observe(labels, duration)
         rescue
           # TODO: log unexpected exception during request recording
-          raise
           nil
         end
       end

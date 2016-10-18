@@ -2,6 +2,7 @@
 
 module Prometheus
   module Client
+    # Store
     class Store
       def get(labels = {})
         synchronize do

@@ -6,12 +6,13 @@ require 'pstore'
 module Prometheus
   module Client
     module Stores
+      # PStore
       class PStore < Store
         def initialize(metric)
           @mutex = Mutex.new
           @metric = metric
 
-          @tempfile = Tempfile.new(["prometheus-#{Process.pid}-#{metric.name}", '.pstore'])
+          @tempfile = Tempfile.new([temp_name, '.pstore'])
           @values = ::PStore.new(@tempfile.path)
         end
 
@@ -28,6 +29,12 @@ module Prometheus
               memo[labels] = @values[labels]
             end
           end
+        end
+
+        private
+
+        def temp_name
+          "prometheus-#{Process.pid}-#{@metric.name}"
         end
       end
     end

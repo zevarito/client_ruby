@@ -56,14 +56,14 @@ module Prometheus
         end
 
         label_set = label_set_for(labels)
-        synchronize { @values[label_set].observe(value) }
+        @store[label_set].observe(value)
       end
-
-      private
 
       def default
         Value.new(@buckets)
       end
+
+      private
 
       def sorted?(bucket)
         bucket.each_cons(2).all? { |i, j| i <= j }

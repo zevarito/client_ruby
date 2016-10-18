@@ -31,7 +31,6 @@ module Prometheus
       # Records a given value.
       def observe(labels, value)
         label_set = label_set_for(labels)
-
         @store[label_set].observe(value)
       end
       alias add observe
@@ -41,15 +40,12 @@ module Prometheus
       def get(labels = {})
         @validator.valid?(labels)
 
-        @store.synchronize do
-          Value.new(@store[labels])
-        end
+        Value.new(@store[labels])
       end
 
-      # Returns all label sets with their values
       def values
-        @store.values.each_with_object({}) do |label, memo|
-          memo[label] = Value.new(@store[label])
+        @store.values do |value|
+          Value.new(value)
         end
       end
 

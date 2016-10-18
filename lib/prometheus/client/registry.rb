@@ -14,7 +14,7 @@ module Prometheus
     class Registry
       class AlreadyRegisteredError < StandardError; end
 
-      def initialize(store_class)
+      def initialize(store_class = Client::Stores::Hash)
         @metrics = {}
         @mutex = Mutex.new
         @store_class = store_class
@@ -26,9 +26,9 @@ module Prometheus
         @mutex.synchronize do
           if exist?(name.to_sym)
             raise AlreadyRegisteredError, "#{name} has already been registered"
-          else
-            @metrics[name.to_sym] = metric
           end
+
+          @metrics[name.to_sym] = metric
         end
 
         metric

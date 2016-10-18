@@ -5,6 +5,7 @@ require 'prometheus/client/store'
 module Prometheus
   module Client
     module Stores
+      # Hash
       class Hash < Store
         def initialize(metric)
           @mutex = Mutex.new
@@ -19,7 +20,7 @@ module Prometheus
         def values
           synchronize do
             @values.each_with_object({}) do |(labels, value), memo|
-              memo[labels] = value
+              memo[labels] = block_given? ? yield(value) : value
             end
           end
         end
